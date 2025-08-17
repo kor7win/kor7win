@@ -7,8 +7,8 @@ async function getPlaylists(groupId) {
     const response = await vkBridge.send("VKWebAppCallAPIMethod", {
       method: "audio.getPlaylists",
       params: {
-        owner_id: -groupId, // ID группы с минусом (например, -12345678)
-        access_token: "ВАШ_ТОКЕН", // Нужен ключ доступа (можно получить через Standalone-приложение)
+        owner_id: -226147406, // ID группы с минусом (например, -12345678)
+        access_token: "TNi05PZAPPrloMC0fMVQ", // Нужен ключ доступа (можно получить через Standalone-приложение)
         v: "5.131", // Версия API
       },
     });
@@ -27,7 +27,7 @@ async function getPlaylists(groupId) {
 
 // Отображаем плейлисты
 async function showPlaylists() {
-  const groupId = 12345678; // Замените на ID вашей группы
+  const groupId = 226147406; // Замените на ID вашей группы
   const playlists = await getPlaylists(groupId);
 
   const appDiv = document.getElementById("app");
