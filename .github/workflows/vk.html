@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Плейлисты группы</title>
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <script src="https://unpkg.com/@vkontakte/vkui/dist/vkui.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@vkontakte/vkui/dist/vkui.css">
+    <style>
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .playlist-cover {
+            width: 50px;
+            height: 50px;
+            margin-right: 12px;
+            background-color: #f0f0f0;
+            background-size: cover;
+            background-position: center;
+        }
+        .playlist-info {
+            flex-grow: 1;
+        }
+        .playlist-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .playlist-count {
+            color: #818c99;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        // Инициализация VK Bridge
+        vkBridge.send('VKWebAppInit');
+
+        // ID вашей группы (без минуса)
+        const GROUP_ID = 226147406;
+        
+        // Основной компонент приложения
+        async function App() {
+            const [playlists, setPlaylists] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+            const [error, setError] = React.useState(null);
+
+            // Получаем плейлисты
+            React.useEffect(() => {
+                async function fetchPlaylists() {
+                    try {
+                        // Получаем токен
+                        const auth = await vkBridge.send('VKWebAppGetAuthToken', {
+                            app_id: YOUR_APP_ID, // Замените на ID вашего приложения
+                            scope: 'audio'
+                        });
+
+                        // Запрашиваем плейлисты
+                        const response = await vkBridge.send('VKWebAppCallAPIMethod', {
+                            method: 'audio.getPlaylists',
+                            params: {
+                                owner_id: -GROUP_ID,
+                                access_token: auth.access_token,
+                                v: '5.131'
+                            }
+                        });
+
+                        if (response.response) {
+                            // Сортируем по алфавиту
+                            const sortedPlaylists = response.response.items.sort((a, b) => 
+                                a.title.localeCompare(b.title)
+                            );
+                            setPlaylists(sortedPlaylists);
+                        }
+                    } catch (err) {
+                        setError(err.message);
+                        console.error('Ошибка:', err);
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+
+                fetchPlaylists();
+            }, []);
+
+            if (loading) {
+                return (
+                    <vkui-root>
+                        <vkui-view active-panel="loading">
+                            <vkui-panel id="loading">
+                                <vkui-panel-header>Плейлисты</vkui-panel-header>
+                                <vkui-spinner size="large" style={{ margin: '20px auto' }} />
+                            </vkui-panel>
+                        </vkui-view>
+                    </vkui-root>
+                );
+            }
+
+            if (error) {
+                return (
+                    <vkui-root>
+                        <vkui-view active-panel="error">
+                            <vkui-panel id="error">
+                                <vkui-panel-header>Ошибка</vkui-panel-header>
+                                <vkui-div>
+                                    <vkui-alert header="Не удалось загрузить плейлисты" 
+                                               text={error}
+                                               actions={[{
+                                                   title: 'Повторить',
+                                                   action: () => window.location.reload()
+                                               }]} />
+                                </vkui-div>
+                            </vkui-panel>
+                        </vkui-view>
+                    </vkui-root>
+                );
+            }
+
+            return (
+                <vkui-root>
+                    <vkui-view active-panel="playlists">
+                        <vkui-panel id="playlists">
+                            <vkui-panel-header>Плейлисты группы</vkui-panel-header>
+                            <vkui-group>
+                                {playlists.map(playlist => (
+                                    <vkui-cell
+                                        key={playlist.id}
+                                        before={
+                                            <div className="playlist-cover"
+                                                 style={{ backgroundImage: `url(${playlist.photo?.photo_300 || 'https://vk.com/images/audio_default.png'})` }} />
+                                        }
+                                        description={`${playlist.count} треков`}
+                                        onClick={() => vkBridge.send('VKWebAppOpenURL', {
+                                            url: `https://vk.com/audio?act=audio_playlist${playlist.owner_id}_${playlist.id}`
+                                        })}
+                                    >
+                                        {playlist.title}
+                                    </vkui-cell>
+                                ))}
+                            </vkui-group>
+                        </vkui-panel>
+                    </vkui-view>
+                </vkui-root>
+            );
+        }
+
+        // Рендерим приложение
+        ReactDOM.render(
+            <App />,
+            document.getElementById('root')
+        );
+    </script>
+</body>
+</html>
